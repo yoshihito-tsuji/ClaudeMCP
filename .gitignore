@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project
+embodied-claude-main.zip
+*.zip
+
+# uv
+.python-version
+
+# ChromaDB
+chroma_data/
+
+# Claude
+.claude/
