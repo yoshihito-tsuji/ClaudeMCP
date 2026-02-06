@@ -343,6 +343,55 @@ crontab -e
 - ElevenLabs API キーは環境変数で管理
 - 長期記憶は `~/.claude/memories/` に保存される
 
+## 三者協働開発モデル
+
+本プロジェクトは **Yoshihitoさん（プロジェクトオーナー）**、**Codex（アーキテクト）**、**Claude Code（実装エンジニア）** の三者協働体制で開発しています。
+
+### 役割分担
+
+| 役割 | 担当 | 責務 |
+| --- | --- | --- |
+| プロジェクトオーナー | Yoshihitoさん | 最終意思決定、要件定義、リリース判断 |
+| アーキテクト | Codex | 上流設計、要件整理、アーキテクチャ策定 |
+| 実装エンジニア | Claude Code | 実装、テスト、コードレビュー、LOG記録 |
+
+### 意思決定フロー
+
+```text
+課題/要望の明確化（Yoshihitoさん）
+    ↓
+設計提案と影響整理（Codex）
+    ↓
+実装方針・見積もり共有（Claude Code）
+    ↓
+最終判断（Yoshihitoさん）
+    ↓
+記録（LOG / DECISIONS.md）
+```
+
+### コミュニケーションルール
+
+- すべて日本語で記述
+- AI発信メッセージは `From: / To:` 形式を使用
+- 作業記録は `LOG/YYYY-MM-DD.md` に追記
+- 重要な決定事項は `DECISIONS.md` に転記
+
+### 開発プロセスドキュメント
+
+| ドキュメント | 説明 |
+| --- | --- |
+| [三者協働ガイド](./docs/team_ops/triad_collaboration.md) | セッション開始手順、言語ルール、レビュー運用 |
+| [Claude Code 役割定義](./docs/team_ops/claude_code_role.md) | Claude Code の責務、Startup Procedure、品質基準 |
+| [Codex 役割定義](./docs/team_ops/codex_role.md) | Codex の責務、設計方針、Startup Procedure |
+| [チームアーキテクチャ](./docs/team_ops/team_architecture.md) | 役割分担、意思決定フロー、エスカレーション基準 |
+| [ログテンプレート](./docs/team_ops/LOG_TEMPLATE.md) | 日次ログの記入形式（5セクション） |
+| [DECISIONS.md](./DECISIONS.md) | 重要な確定事項一覧 |
+
+### コミットメッセージ規則
+
+- 日本語で記述し、変更の意図（why）を明確にする
+- プレフィックス: `Add:` / `Update:` / `Fix:` / `Refactor:` / `Docs:` / `Security:`
+
 ## ライセンス
 
 MIT License
