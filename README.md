@@ -387,6 +387,13 @@ crontab -e
 | [ログテンプレート](./docs/team_ops/LOG_TEMPLATE.md) | 日次ログの記入形式（5セクション） |
 | [DECISIONS.md](./DECISIONS.md) | 重要な確定事項一覧 |
 
+### 📚 開発方法論の詳細
+
+- **GitHub版**: [Dev-Rules](https://github.com/yoshihito-tsuji/Dev-Rules)
+- **ローカル版**: [../Dev-Rules/README.md](../Dev-Rules/README.md)
+- **Codex向けガイド**: [../Dev-Rules/CODEX_ONBOARDING.md](../Dev-Rules/CODEX_ONBOARDING.md)
+- **Claude Code Best Practice**: [../Dev-Rules/claude-code/README.md](../Dev-Rules/claude-code/README.md)
+
 ### コミットメッセージ規則
 
 - 日本語で記述し、変更の意図（why）を明確にする
