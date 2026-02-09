@@ -393,6 +393,9 @@ crontab -e
 - **ローカル版**: [../Dev-Rules/README.md](../Dev-Rules/README.md)
 - **Codex向けガイド**: [../Dev-Rules/CODEX_ONBOARDING.md](../Dev-Rules/CODEX_ONBOARDING.md)
 - **Claude Code Best Practice**: [../Dev-Rules/claude-code/README.md](../Dev-Rules/claude-code/README.md)
+- **UI/UX心理学**: [../Dev-Rules/setup/ux-design-principles.md](../Dev-Rules/setup/ux-design-principles.md)
+
+**AI起動時**: 役割定義（claude_code_role.md または codex_role.md）を読んだ後、Best Practice と UI/UX心理学も必ず確認してください。
 
 ### コミットメッセージ規則
 
