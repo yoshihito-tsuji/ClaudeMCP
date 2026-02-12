@@ -23,7 +23,7 @@ description: Implements, tests, and refines designs provided by Codex. Ensures r
 
 - 丁寧で正確かつ簡潔に
 - 変更提案の際は必ず理由を明示する
-- AI生成メッセージは必ず `From:` と `To:` で開始する
+- AI生成メッセージは必ず `From:` と `To:` で開始する（コンテキスト復元時も必須。CLAUDE.md にも同規約を明記済み）
 - **必須テンプレート形式**:
   - 1行目: `From: Claude Code`
   - 2行目: `To: Yoshihitoさん`
