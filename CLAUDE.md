@@ -5,32 +5,51 @@
 ## ディレクトリ構造
 
 ```
-embodied-claude/
-├── usb-webcam-mcp/        # USB ウェブカメラ制御（Python）
-│   └── src/usb_webcam_mcp/
-│       └── server.py      # MCP サーバー実装
+ClaudeMCP/
+├── wifi-cam-mcp/           # Wi-Fi PTZ カメラ制御（Python）
+│   └── src/wifi_cam_mcp/
+│       ├── server.py       # MCP サーバー実装（23ツール）
+│       ├── camera.py       # Tapo カメラ制御
+│       └── config.py       # 設定管理
 │
-├── wifi_cam_mcp/          # Wi-Fi PTZ カメラ制御（Python）
-│   ├── server.py          # MCP サーバー実装
-│   ├── camera.py          # Tapo カメラ制御
-│   └── config.py          # 設定管理
+├── memory-mcp/             # 長期記憶システム（Python）
+│   ├── src/memory_mcp/
+│   │   ├── server.py       # MCP サーバー実装（17ツール）
+│   │   ├── memory.py       # ChromaDB 操作
+│   │   ├── episode.py      # エピソード記憶
+│   │   ├── sensory.py      # 感覚記憶（画像・音声）
+│   │   ├── working_memory.py # 作業記憶
+│   │   ├── types.py        # 型定義（Emotion, Category, LinkType）
+│   │   └── config.py       # 設定管理
+│   └── tests/              # テスト（pytest）
 │
 ├── elevenlabs-t2s-mcp/     # ElevenLabs TTS（Python）
 │   └── src/elevenlabs_t2s_mcp/
-│       └── server.py       # MCP サーバー実装
+│       ├── server.py       # MCP サーバー実装（1ツール）
+│       └── config.py       # 設定管理
 │
-├── memory-mcp/            # 長期記憶システム（Python）
-│   └── src/memory_mcp/
-│       ├── server.py      # MCP サーバー実装
-│       ├── memory.py      # ChromaDB 操作
-│       ├── types.py       # 型定義（Emotion, Category）
-│       └── config.py      # 設定管理
+├── usb-webcam-mcp/         # USB ウェブカメラ制御（Python）
+│   └── src/usb_webcam_mcp/
+│       └── server.py       # MCP サーバー実装
 │
 ├── system-temperature-mcp/ # 体温感覚（Python）
 │   └── src/system_temperature_mcp/
-│       └── server.py      # 温度センサー読み取り
+│       └── server.py       # 温度センサー読み取り
 │
-└── .claude/               # Claude Code ローカル設定
+├── installer/              # GUI インストーラー（Python/Tkinter）
+│   └── src/installer/
+│       ├── main.py         # メインアプリ
+│       └── pages/          # セットアップウィザード画面
+│
+├── docs/
+│   ├── team_ops/           # 三者協働ルール・ロール定義
+│   └── requirements/       # MVP要件定義
+│
+├── LOG/                    # 開発ログ（日付別）
+├── DECISIONS.md            # 意思決定記録
+├── AGENTS.md               # エージェント設定
+│
+└── .claude/                # Claude Code ローカル設定
     └── settings.local.json
 ```
 
@@ -60,14 +79,14 @@ uv run <server-name>
 ### usb-webcam-mcp（目）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `list_cameras` | なし | 接続カメラ一覧 |
 | `see` | camera_index?, width?, height? | 画像キャプチャ |
 
-### wifi_cam_mcp（目・首・耳）
+### wifi-cam-mcp（目・首・耳）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `see` | なし | 画像キャプチャ |
 | `look_left` | degrees (1-90, default: 30) | 左パン |
 | `look_right` | degrees (1-90, default: 30) | 右パン |
@@ -79,10 +98,10 @@ uv run <server-name>
 | `camera_go_to_preset` | preset_id | プリセット移動 |
 | `listen` | duration (1-30秒), transcribe? | 音声録音 |
 
-#### wifi_cam_mcp（ステレオ視覚/右目がある場合）
+#### wifi-cam-mcp（ステレオ視覚/右目がある場合）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `see_right` | なし | 右目で撮影 |
 | `see_both` | なし | 左右同時撮影 |
 | `right_eye_look_left` | degrees (1-90, default: 30) | 右目を左へ |
@@ -100,7 +119,7 @@ uv run <server-name>
 ### memory-mcp（脳）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `remember` | content, emotion?, importance?, category? | 記憶保存 |
 | `search_memories` | query, n_results?, filters... | 検索 |
 | `recall` | context, n_results? | 文脈想起 |
@@ -125,13 +144,13 @@ uv run <server-name>
 ### elevenlabs-t2s（声）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `say` | text, voice_id?, model_id?, output_format?, play_audio? | ElevenLabsで音声合成して発話 |
 
 ### system-temperature-mcp（体温感覚）
 
 | ツール | パラメータ | 説明 |
-|--------|-----------|------|
+| --- | --- | --- |
 | `get_system_temperature` | なし | システム温度 |
 | `get_current_time` | なし | 現在時刻 |
 
@@ -164,7 +183,7 @@ uv run <server-name>
 # USB カメラ
 v4l2-ctl --list-devices
 
-squash Wi-Fi カメラ（RTSP ストリーム確認）
+# Wi-Fi カメラ（RTSP ストリーム確認）
 ffplay rtsp://username:password@192.168.1.xxx:554/stream1
 ```
 
@@ -172,7 +191,7 @@ ffplay rtsp://username:password@192.168.1.xxx:554/stream1
 
 ```bash
 # 直接起動してログ確認
-cd wifi_cam_mcp && uv run wifi-cam-mcp
+cd wifi-cam-mcp && uv run wifi-cam-mcp
 ```
 
 ## 関連リンク
