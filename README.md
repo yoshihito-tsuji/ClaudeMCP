@@ -440,15 +440,11 @@ crontab -e
 | [ログテンプレート](./docs/team_ops/LOG_TEMPLATE.md) | 日次ログの記入形式（5セクション） |
 | [DECISIONS.md](./DECISIONS.md) | 重要な確定事項一覧 |
 
-### 開発方法論の詳細
+### 開発方法論
 
-- **GitHub版**: [Dev-Rules](https://github.com/yoshihito-tsuji/Dev-Rules)
-- **ローカル版**: [../Dev-Rules/README.md](../Dev-Rules/README.md)
-- **Codex向けガイド**: [../Dev-Rules/CODEX_ONBOARDING.md](../Dev-Rules/CODEX_ONBOARDING.md)
-- **Claude Code Best Practice**: [../Dev-Rules/claude-code/README.md](../Dev-Rules/claude-code/README.md)
-- **UI/UX心理学**: [../Dev-Rules/setup/ux-design-principles.md](../Dev-Rules/setup/ux-design-principles.md)
+- **Dev-Rules**: [GitHub](https://github.com/yoshihito-tsuji/Dev-Rules) / [ローカル](../Dev-Rules/README.md)
 
-**AI起動時**: 役割定義（claude_code_role.md または codex_role.md）を読んだ後、Best Practice と UI/UX心理学も必ず確認してください。
+**AI起動時（MUST）**: セッション開始時の必須参照手順（役割定義 → Dev-Rules → Best Practice → UI/UX心理学）は **[CLAUDE.md の「セッション開始時の必須参照」](./CLAUDE.md)** を参照。
 
 ### コミットメッセージ規則
 

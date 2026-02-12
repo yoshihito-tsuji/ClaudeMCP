@@ -13,6 +13,17 @@
 
 ---
 
+## [STARTUP] - 起動時参照確認
+
+セッション開始時に以下を確認したことをチェックすること（詳細は [CLAUDE.md](../../CLAUDE.md) を参照）。
+
+- [ ] 役割定義（claude_code_role.md / codex_role.md）
+- [ ] Dev-Rules
+- [ ] Claude Code Best Practice
+- [ ] UI/UX心理学
+
+---
+
 ## [PROPOSAL] - 提案内容
 
 **説明**: 設計案、実装方針、新機能アイデアなど、何らかの提案を記録するセクションです。

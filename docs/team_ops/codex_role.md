@@ -47,13 +47,17 @@ description: Defines the overall design, architecture, and workflow for the proj
 2. **README関連資料を精読する（必須）**:
    - **[README.md](../../README.md)** - プロジェクト概要、開発方針、品質基準を理解
    - **[CLAUDE.md](../../CLAUDE.md)** - プロジェクト固有の指示を確認
-3. **日次ログファイルの確認と作成**:
+3. **Best Practice / UI/UX心理学を読み込む（MUST）**:
+   - **[Claude Code Best Practice](../../../Dev-Rules/claude-code/README.md)** - 実装品質・ベストプラクティス
+   - **[UI/UX心理学](../../../Dev-Rules/setup/ux-design-principles.md)** - ユーザー体験設計の原則
+   - 詳細な参照順序は [CLAUDE.md の「セッション開始時の必須参照」](../../CLAUDE.md) を参照
+4. **日次ログファイルの確認と作成**:
    - **`LOG/YYYY-MM-DD.md`** の今日のファイルが存在するか確認
    - 存在しない場合:
      - `docs/team_ops/LOG_TEMPLATE.md` をコピーして `LOG/YYYY-MM-DD.md` を作成
      - ファイル先頭の `YYYY-MM-DD` を今日の日付に置換
    - 存在する場合は、最新の `[PROPOSAL]`, `[PLAN]`, `[DECISION]` を確認して文脈を把握
-4. **関連するプロジェクトドキュメントを確認** - 作業内容に応じて参照
+5. **関連するプロジェクトドキュメントを確認** - 作業内容に応じて参照
 
 ## 本プロジェクト固有の設計方針
 
