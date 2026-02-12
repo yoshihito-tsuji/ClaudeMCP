@@ -179,7 +179,13 @@ uv run <server-name>
 | `list_recent_memories` | 最近の記憶一覧 |
 | `get_memory_stats` | 記憶の統計情報 |
 
-連鎖・エピソード・感覚記憶・作業記憶などの詳細は [memory-mcp/README.md](./memory-mcp/README.md) を参照。
+行動記憶・連鎖・エピソード・感覚記憶・作業記憶などの詳細は [memory-mcp/README.md](./memory-mcp/README.md) を参照。
+
+#### 行動記憶
+
+| ツール | 説明 |
+| --- | --- |
+| `remember_action` | ツール実行結果を構造化して記録 |
 
 #### 実装予定（Planned）
 
@@ -190,7 +196,7 @@ uv run <server-name>
 | `get_association_diagnostics` | 連想探索の診断情報 | 上流リポジトリで実装済み |
 
 **Emotion**: happy, sad, surprised, moved, excited, nostalgic, curious, neutral
-**Category**: daily, philosophical, technical, memory, observation, feeling, conversation
+**Category**: daily, philosophical, technical, memory, observation, feeling, conversation, action
 
 ### system-temperature-mcp（体温感覚）
 

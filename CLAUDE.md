@@ -150,9 +150,10 @@ uv run <server-name>
 | `refresh_working_memory` | なし | 作業記憶を更新 |
 | `link_memories` | source_id, target_id, link_type?, note? | 記憶をリンク |
 | `get_causal_chain` | memory_id, direction?, max_depth? | 因果チェーン取得 |
+| `remember_action` | tool_name, parameters_summary, result_summary, status?, reasoning?, importance?, related_memory_id? | ツール実行結果を記録 |
 
 **Emotion**: happy, sad, surprised, moved, excited, nostalgic, curious, neutral
-**Category**: daily, philosophical, technical, memory, observation, feeling, conversation
+**Category**: daily, philosophical, technical, memory, observation, feeling, conversation, action
 
 ### elevenlabs-t2s（声）
 

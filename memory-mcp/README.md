@@ -12,7 +12,7 @@ AI に長期記憶を与える MCP サーバー。ChromaDB によるセマンテ
 - 作業記憶（直近の記憶への高速アクセス）
 - 因果リンク（記憶間の因果・関連関係の記録）
 
-## ツール一覧（17ツール）
+## ツール一覧（18ツール）
 
 ### 基本ツール
 
@@ -54,6 +54,12 @@ AI に長期記憶を与える MCP サーバー。ChromaDB によるセマンテ
 | `get_working_memory` | n_results? (default: 10) | 直近の記憶を高速取得 |
 | `refresh_working_memory` | なし | 重要な長期記憶で作業記憶を更新 |
 
+### 行動記憶ツール
+
+| ツール | パラメータ | 説明 |
+| --- | --- | --- |
+| `remember_action` | tool_name (必須), parameters_summary (必須), result_summary (必須), status?, reasoning?, importance?, related_memory_id? | ツール実行結果を構造化して記録 |
+
 ### 因果リンクツール
 
 | ツール | パラメータ | 説明 |
@@ -85,7 +91,7 @@ AI に長期記憶を与える MCP サーバー。ChromaDB によるセマンテ
 
 ### Category
 
-`daily`, `philosophical`, `technical`, `memory`, `observation`, `feeling`, `conversation`
+`daily`, `philosophical`, `technical`, `memory`, `observation`, `feeling`, `conversation`, `action`
 
 ## セットアップ
 

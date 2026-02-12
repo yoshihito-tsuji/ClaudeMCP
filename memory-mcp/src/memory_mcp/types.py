@@ -29,6 +29,7 @@ class Category(str, Enum):
     OBSERVATION = "observation"
     FEELING = "feeling"
     CONVERSATION = "conversation"
+    ACTION = "action"
 
 
 # Phase 5: 因果リンク

@@ -65,7 +65,7 @@ class MemoryMCPServer:
                                 "type": "string",
                                 "description": "Category of memory",
                                 "default": "daily",
-                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation"],
+                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation", "action"],
                             },
                             "auto_link": {
                                 "type": "boolean",
@@ -108,7 +108,7 @@ class MemoryMCPServer:
                             "category_filter": {
                                 "type": "string",
                                 "description": "Filter by category (optional)",
-                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation"],
+                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation", "action"],
                             },
                             "date_from": {
                                 "type": "string",
@@ -159,7 +159,7 @@ class MemoryMCPServer:
                             "category_filter": {
                                 "type": "string",
                                 "description": "Filter by category (optional)",
-                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation"],
+                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation", "action"],
                             },
                         },
                         "required": [],
@@ -481,6 +481,48 @@ class MemoryMCPServer:
                             },
                         },
                         "required": ["memory_id"],
+                    },
+                ),
+                Tool(
+                    name="remember_action",
+                    description="Record an action (tool call or operation) as a memory. Use this to log what you did, with what parameters, and what happened. Helps build a searchable history of actions taken.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "tool_name": {
+                                "type": "string",
+                                "description": "Name of the tool/action performed (e.g., 'see', 'look_left', 'say')",
+                            },
+                            "parameters_summary": {
+                                "type": "string",
+                                "description": "Brief summary of parameters used (mask sensitive values like passwords/API keys)",
+                            },
+                            "result_summary": {
+                                "type": "string",
+                                "description": "Brief summary of the result or outcome",
+                            },
+                            "status": {
+                                "type": "string",
+                                "description": "Outcome status of the action",
+                                "default": "success",
+                                "enum": ["success", "partial", "failure"],
+                            },
+                            "reasoning": {
+                                "type": "string",
+                                "description": "Why this action was taken (optional context)",
+                            },
+                            "importance": {
+                                "type": "integer",
+                                "description": "Importance level 1-5. If omitted, defaults by status: success=2, partial=3, failure=4",
+                                "minimum": 1,
+                                "maximum": 5,
+                            },
+                            "related_memory_id": {
+                                "type": "string",
+                                "description": "ID of a related memory to auto-link (e.g., the observation that triggered this action)",
+                            },
+                        },
+                        "required": ["tool_name", "parameters_summary", "result_summary"],
                     },
                 ),
             ]
@@ -1013,6 +1055,59 @@ Date Range:
                             output_lines.append(f"\nNo {direction_label} found.\n")
 
                         return [TextContent(type="text", text="\n".join(output_lines))]
+
+                    case "remember_action":
+                        tool_name = arguments.get("tool_name", "")
+                        params_summary = arguments.get("parameters_summary", "")
+                        result_summary = arguments.get("result_summary", "")
+                        if not tool_name or not params_summary or not result_summary:
+                            return [TextContent(type="text", text="Error: tool_name, parameters_summary, and result_summary are required")]
+
+                        status = arguments.get("status", "success")
+                        reasoning = arguments.get("reasoning", "")
+
+                        # Default importance by status
+                        importance_defaults = {"success": 2, "partial": 3, "failure": 4}
+                        importance = arguments.get("importance", importance_defaults.get(status, 2))
+
+                        # Build structured content for searchability
+                        content_parts = [f"[Action] {tool_name}"]
+                        content_parts.append(f"Parameters: {params_summary}")
+                        content_parts.append(f"Result: {result_summary}")
+                        content_parts.append(f"Status: {status}")
+                        if reasoning:
+                            content_parts.append(f"Reasoning: {reasoning}")
+                        content = "\n".join(content_parts)
+
+                        # Save as memory with category=action
+                        memory = await self._memory_store.save(
+                            content=content,
+                            emotion="neutral",
+                            importance=importance,
+                            category="action",
+                        )
+
+                        # Auto-link to related memory if provided
+                        related_id = arguments.get("related_memory_id")
+                        link_info = ""
+                        if related_id:
+                            try:
+                                await self._memory_store.add_causal_link(
+                                    source_id=memory.id,
+                                    target_id=related_id,
+                                    link_type="related",
+                                    note="Action triggered by/related to memory",
+                                )
+                                link_info = f"\nLinked to: {related_id[:8]}..."
+                            except Exception as link_err:
+                                link_info = f"\nLink failed: {link_err!s}"
+
+                        return [
+                            TextContent(
+                                type="text",
+                                text=f"Action recorded!\nID: {memory.id}\nTool: {tool_name}\nStatus: {status}\nImportance: {importance}\nCategory: action{link_info}",
+                            )
+                        ]
 
                     case _:
                         return [TextContent(type="text", text=f"Unknown tool: {name}")]
