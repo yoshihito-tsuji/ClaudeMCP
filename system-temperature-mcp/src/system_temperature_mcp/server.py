@@ -1,5 +1,6 @@
 """MCP Server for system temperature monitoring - your sense of body temperature."""
 
+import os
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -151,6 +152,99 @@ def get_all_temperatures() -> dict[str, Any]:
     }
 
 
+def _parse_time(time_str: str) -> tuple[int, int]:
+    """Parse 'HH:MM' to (hour, minute)."""
+    parts = time_str.strip().split(":")
+    return int(parts[0]), int(parts[1])
+
+
+def _time_to_minutes(hour: int, minute: int) -> int:
+    """Convert hour:minute to minutes since midnight."""
+    return hour * 60 + minute
+
+
+def get_circadian_config() -> dict[str, Any]:
+    """Read circadian rhythm config from environment variables."""
+    enabled = os.environ.get("CIRCADIAN_ENABLED", "true").lower() in ("true", "1", "yes")
+    timezone = os.environ.get("CIRCADIAN_TIMEZONE", "Asia/Tokyo")
+
+    morning_h, morning_m = _parse_time(os.environ.get("CIRCADIAN_MORNING_START", "05:00"))
+    day_h, day_m = _parse_time(os.environ.get("CIRCADIAN_DAY_START", "10:00"))
+    evening_h, evening_m = _parse_time(os.environ.get("CIRCADIAN_EVENING_START", "18:00"))
+    night_h, night_m = _parse_time(os.environ.get("CIRCADIAN_NIGHT_START", "22:00"))
+
+    return {
+        "enabled": enabled,
+        "timezone": timezone,
+        "morning_start": _time_to_minutes(morning_h, morning_m),
+        "day_start": _time_to_minutes(day_h, day_m),
+        "evening_start": _time_to_minutes(evening_h, evening_m),
+        "night_start": _time_to_minutes(night_h, night_m),
+    }
+
+
+def get_circadian_state() -> dict[str, Any]:
+    """Determine current circadian state based on local time."""
+    config = get_circadian_config()
+
+    if not config["enabled"]:
+        tz = ZoneInfo(config["timezone"])
+        now = datetime.now(tz)
+        return {
+            "local_time": now.isoformat(),
+            "daypart": "unknown",
+            "recommended_observation_interval_min": 10,
+            "greeting_tone": "normal",
+            "memory_importance_bias": 0,
+            "circadian_enabled": False,
+        }
+
+    tz = ZoneInfo(config["timezone"])
+    now = datetime.now(tz)
+    current_minutes = _time_to_minutes(now.hour, now.minute)
+
+    morning = config["morning_start"]
+    day = config["day_start"]
+    evening = config["evening_start"]
+    night = config["night_start"]
+
+    # Determine daypart
+    if morning <= current_minutes < day:
+        daypart = "morning"
+        observation_interval = 10
+        greeting_tone = "bright"
+        importance_bias = 0
+    elif day <= current_minutes < evening:
+        daypart = "day"
+        observation_interval = 10
+        greeting_tone = "normal"
+        importance_bias = 0
+    elif evening <= current_minutes < night:
+        daypart = "evening"
+        observation_interval = 15
+        greeting_tone = "calm"
+        importance_bias = 1
+    elif current_minutes >= night or current_minutes < morning:
+        daypart = "night"
+        observation_interval = 30
+        greeting_tone = "quiet"
+        importance_bias = 1
+    else:
+        daypart = "day"
+        observation_interval = 10
+        greeting_tone = "normal"
+        importance_bias = 0
+
+    return {
+        "local_time": now.isoformat(),
+        "daypart": daypart,
+        "recommended_observation_interval_min": observation_interval,
+        "greeting_tone": greeting_tone,
+        "memory_importance_bias": importance_bias,
+        "circadian_enabled": True,
+    }
+
+
 def get_current_time() -> str:
     """Get current time in Japan timezone."""
     jst = ZoneInfo("Asia/Tokyo")
@@ -206,6 +300,15 @@ async def list_tools() -> list[Tool]:
                 "required": [],
             },
         ),
+        Tool(
+            name="get_circadian_state",
+            description="Get current circadian rhythm state. Returns the time of day classification (morning/day/evening/night), recommended observation interval, greeting tone, and memory importance bias. Use this to adapt your behavior to the time of day.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -228,6 +331,19 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     elif name == "get_current_time":
         result = get_current_time()
         return [TextContent(type="text", text=result)]
+
+    elif name == "get_circadian_state":
+        state = get_circadian_state()
+        lines = [
+            f"Circadian State:",
+            f"  Local Time: {state['local_time']}",
+            f"  Daypart: {state['daypart']}",
+            f"  Greeting Tone: {state['greeting_tone']}",
+            f"  Observation Interval: {state['recommended_observation_interval_min']} min",
+            f"  Memory Importance Bias: +{state['memory_importance_bias']}",
+            f"  Circadian Enabled: {state['circadian_enabled']}",
+        ]
+        return [TextContent(type="text", text="\n".join(lines))]
 
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 

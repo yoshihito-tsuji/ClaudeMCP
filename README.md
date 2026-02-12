@@ -198,12 +198,13 @@ uv run <server-name>
 **Emotion**: happy, sad, surprised, moved, excited, nostalgic, curious, neutral
 **Category**: daily, philosophical, technical, memory, observation, feeling, conversation, action
 
-### system-temperature-mcp（体温感覚）
+### system-temperature-mcp（体温感覚・概日リズム）
 
 | ツール | 説明 |
 | --- | --- |
 | `get_system_temperature` | システム温度を取得 |
 | `get_current_time` | 現在時刻を取得 |
+| `get_circadian_state` | 概日リズム状態を取得（daypart / 挨拶トーン / 観察間隔 / 記憶重要度バイアス） |
 
 ## セットアップ
 
@@ -380,6 +381,28 @@ crontab -e
 - 前回と比べて変化を検出（人の有無、明るさなど）
 - 気づいたことを記憶に保存（category: observation）
 - ログを `~/.claude/autonomous-logs/` に保存
+
+### 概日リズム対応（Phase 1）
+
+時間帯に応じて自律行動の振る舞いを調整できます。環境変数で有効化します。
+
+| 環境変数 | デフォルト | 説明 |
+| --- | --- | --- |
+| `CIRCADIAN_ENABLED` | MCP: `true` / Shell: `false` | 概日リズム機能の有効化 |
+| `CIRCADIAN_TIMEZONE` | `Asia/Tokyo` | タイムゾーン（MCP サーバー側） |
+| `CIRCADIAN_MORNING_START` | `05:00` | 朝の開始時刻 |
+| `CIRCADIAN_DAY_START` | `10:00` | 昼の開始時刻 |
+| `CIRCADIAN_EVENING_START` | `18:00` | 夕方の開始時刻 |
+| `CIRCADIAN_NIGHT_START` | `22:00` | 夜の開始時刻 |
+
+| daypart | 挨拶トーン | 観察間隔 | 記憶重要度バイアス |
+| --- | --- | --- | --- |
+| morning | bright | 10分 | +0 |
+| day | normal | 10分 | +0 |
+| evening | calm | 15分 | +1 |
+| night | quiet | 30分 | +1 |
+
+`get_circadian_state` ツール（system-temperature-mcp）で現在の状態を取得できます。
 
 ## 今後の展望
 

@@ -161,12 +161,17 @@ uv run <server-name>
 | --- | --- | --- |
 | `say` | text, voice_id?, model_id?, output_format?, play_audio? | ElevenLabsで音声合成して発話 |
 
-### system-temperature-mcp（体温感覚）
+### system-temperature-mcp（体温感覚・概日リズム）
 
 | ツール | パラメータ | 説明 |
 | --- | --- | --- |
 | `get_system_temperature` | なし | システム温度 |
 | `get_current_time` | なし | 現在時刻 |
+| `get_circadian_state` | なし | 概日リズム状態（daypart / 挨拶トーン / 観察間隔 / 記憶重要度バイアス） |
+
+### 概日リズム運用ルール
+
+`CIRCADIAN_ENABLED=true` の場合、`get_circadian_state` で取得した `greeting_tone` と `memory_importance_bias` に従って振る舞いを調整すること。夜間（night）は観察頻度を下げ、重要な変化のみ記録する。
 
 ## 注意事項
 

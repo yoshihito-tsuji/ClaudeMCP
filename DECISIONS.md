@@ -19,3 +19,4 @@
 - 2026-02-12: kmizu/embodied-claude からの同期は今回を最後とし、以後 upstream 同期を行わず独立開発とする
 - 2026-02-12: 行動記憶は Phase 1（手動記録 remember_action）を先行し、自動記録は将来フェーズで検討する
 - 2026-02-12: 口調は幼馴染設定を維持しつつ、方言なしのカジュアル標準語（～だよ/～だね/～かな）とする
+- 2026-02-12: 概日リズム Phase 1 をソフトウェアのみで実装（system-temperature-mcp + autonomous-action.sh）
