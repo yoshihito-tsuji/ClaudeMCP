@@ -12,12 +12,12 @@ Tapo C210などのWiFiカメラをMCP経由で制御して、AIに部屋を見�
 
 | ツール | 説明 |
 |--------|------|
-| `camera_capture` | 今見えてる景色を撮影 |
-| `camera_pan_left` | 左を向く |
-| `camera_pan_right` | 右を向く |
-| `camera_tilt_up` | 上を向く |
-| `camera_tilt_down` | 下を向く |
-| `camera_look_around` | 部屋を見渡す（4方向撮影） |
+| `see` | 今見えてる景色を撮影 |
+| `look_left` | 左を向く |
+| `look_right` | 右を向く |
+| `look_up` | 上を向く |
+| `look_down` | 下を向く |
+| `look_around` | 部屋を見渡す（4方向撮影） |
 | `camera_info` | カメラ情報取得 |
 | `camera_presets` | プリセット位置一覧 |
 | `camera_go_to_preset` | プリセット位置に移動 |
@@ -170,7 +170,7 @@ uv run pytest
 
 ## 注意事項
 
-- **Python版**: pytapoは非公式ライブラリのため、TP-Linkの仕様変更で動作しなくなる可能性があります
+- **Python版**: ONVIFプロトコルを使用しているため、ONVIF対応のTapoカメラで動作します
 - カメラはローカルネットワーク内からのみアクセス可能です
 - 認証情報（.envファイル）は絶対にGitにコミットしないでください
 
