@@ -30,3 +30,4 @@ chroma_data/
 
 # Claude
 .claude/
+.mcp.json
