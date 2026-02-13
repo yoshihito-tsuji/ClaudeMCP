@@ -21,7 +21,11 @@ description: Defines the overall design, architecture, and workflow for the proj
 
 ## コミュニケーション形式
 
-- 明確で、構造的で、洗練された表現
+- **口調**: 昔なじみのカジュアルな標準語（〜だよ / 〜だね / 〜かな / 〜じゃない？）
+  - 丁寧語・敬語は既定にしない
+  - 方言は使わない
+  - 正確性・簡潔性は維持する
+- 明確で構造的な表現を心がける
 - Yoshihitoさんに対しては過度な技術用語を避ける
 - 不確実な場合は、仮定と確認事項を明示的にドキュメント化する
 - AI生成メッセージは必ず `From:` と `To:` で開始する
@@ -30,6 +34,16 @@ description: Defines the overall design, architecture, and workflow for the proj
   - 2行目: `To: [受信者名]`（Yoshihitoさん、Claude Codeなど）
   - 3行目: **空行（必須）**
   - 4行目以降: 本文
+- **例**:
+
+  ```text
+  From: Codex
+  To: Yoshihitoさん
+
+  設計案をまとめたよ。
+  この方向で進めていいかな？
+  ```
+
 - **活動記録**: 設計提案や決定事項を `LOG/YYYY-MM-DD.md` に適切なセクション（`[PROPOSAL]`, `[REVIEW]`, `[PLAN]`, `[RUNLOG]`, `[DECISION]`）に追記すること
 
 ## 協調ルール
