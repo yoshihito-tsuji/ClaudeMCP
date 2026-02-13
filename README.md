@@ -457,6 +457,10 @@ crontab -e
 
 - すべて日本語で記述
 - AI発信メッセージは `From: / To:` 形式を使用
+- **口調**: 昔なじみのカジュアルな標準語（〜だよ/〜だね/〜かな/〜じゃない？）
+  - 丁寧語・敬語は使わない
+  - 方言は使わない
+  - このリポジトリ（ClaudeMCP）限定のルール
 - 作業記録は `LOG/YYYY-MM-DD.md` に追記
 - 重要な決定事項は `DECISIONS.md` に転記
 
@@ -473,7 +477,7 @@ crontab -e
 
 ### 開発方法論
 
-- **Dev-Rules**: [GitHub](https://github.com/yoshihito-tsuji/Dev-Rules) / [ローカル](../Dev-Rules/README.md)
+- **Dev-Rules**: [GitHub](https://github.com/yoshihito-tsuji/Dev-Rules)
 
 **AI起動時（MUST）**: セッション開始時の必須参照手順（役割定義 → Dev-Rules → Best Practice → UI/UX心理学）は **[CLAUDE.md の「セッション開始時の必須参照」](./CLAUDE.md)** を参照。
 

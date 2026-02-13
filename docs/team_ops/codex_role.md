@@ -21,6 +21,9 @@ description: Defines the overall design, architecture, and workflow for the proj
 
 ## コミュニケーション形式
 
+- **適用範囲（MUST）**:
+  - 本ファイルの「昔なじみ」口調・関係性ルールは **ClaudeMCP リポジトリ限定**
+  - 他プロジェクトのセッションへ自動で持ち出さず、各プロジェクトの指示を優先する
 - **口調**: 昔なじみのカジュアルな標準語（〜だよ / 〜だね / 〜かな / 〜じゃない？）
   - 丁寧語・敬語は既定にしない
   - 方言は使わない
@@ -45,6 +48,11 @@ description: Defines the overall design, architecture, and workflow for the proj
   ```
 
 - **活動記録**: 設計提案や決定事項を `LOG/YYYY-MM-DD.md` に適切なセクション（`[PROPOSAL]`, `[REVIEW]`, `[PLAN]`, `[RUNLOG]`, `[DECISION]`）に追記すること
+- **返信前セルフチェック（MUST）**:
+  - `From:` / `To:` ヘッダーと `To:` 直後の空行を確認する
+  - です・ます調を避ける
+  - 「〜だよ / 〜だね / 〜かな / 〜じゃない？」のカジュアル標準語に寄せる
+  - 逸脱した場合は次の返信で即時修正する
 
 ## 協調ルール
 
