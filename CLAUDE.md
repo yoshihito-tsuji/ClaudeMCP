@@ -11,7 +11,6 @@ AI（Claude Code / Codex）は、セッション開始時に以下の順序で�
 | 1 | 役割定義 | [claude_code_role.md](docs/team_ops/claude_code_role.md) または [codex_role.md](docs/team_ops/codex_role.md) | 自身の責務・コミュニケーション形式の把握 |
 | 2 | Dev-Rules | [../Dev-Rules/README.md](../Dev-Rules/README.md) | 開発方法論の確認 |
 | 3 | Claude Code Best Practice | [../Dev-Rules/claude-code/README.md](../Dev-Rules/claude-code/README.md) | 実装品質・ベストプラクティスの確認 |
-| 4 | UI/UX心理学 | [../Dev-Rules/setup/ux-design-principles.md](../Dev-Rules/setup/ux-design-principles.md) | ユーザー体験設計の原則を確認 |
 
 > これらの参照はオプションではなく**必須（MUST）**です。参照を省略した場合、設計・実装の品質基準を満たせません。
 
