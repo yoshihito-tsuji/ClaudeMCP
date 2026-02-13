@@ -4,6 +4,8 @@
 
 > 原作: [kmizu/embodied-claude](https://github.com/kmizu/embodied-claude)
 
+**独立開発方針（2026-02-12 決定）**: 本プロジェクトは kmizu/embodied-claude から独立したプロジェクトです。上流リポジトリとの同期・参照は行いません。機能追加・設計判断はすべて本プロジェクト独自に行います。
+
 ## コンセプト
 
 従来の LLM は「見せてもらう」存在だったが、身体を持つことで「自分で見る」存在になる。
@@ -189,11 +191,11 @@ uv run <server-name>
 
 #### 実装予定（Planned）
 
-| ツール | 説明 | 備考 |
-| --- | --- | --- |
-| `recall_divergent` | 連想を発散させた想起 | 上流リポジトリで実装済み |
-| `consolidate_memories` | 手動の再生・統合処理 | 上流リポジトリで実装済み |
-| `get_association_diagnostics` | 連想探索の診断情報 | 上流リポジトリで実装済み |
+| ツール | 説明 |
+| --- | --- |
+| `recall_divergent` | 連想を発散させた想起 |
+| `consolidate_memories` | 手動の再生・統合処理 |
+| `get_association_diagnostics` | 連想探索の診断情報 |
 
 **Emotion**: happy, sad, surprised, moved, excited, nostalgic, curious, neutral
 **Category**: daily, philosophical, technical, memory, observation, feeling, conversation, action
