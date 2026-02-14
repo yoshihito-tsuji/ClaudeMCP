@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -30,6 +31,37 @@ class Category(str, Enum):
     FEELING = "feeling"
     CONVERSATION = "conversation"
     ACTION = "action"
+
+
+# Phase 1: Sensory Buffer
+
+
+@dataclass(frozen=True)
+class SensoryBufferEntry:
+    """感覚バッファエントリ（一時保存、TTL管理）.
+
+    感覚データ（視覚・聴覚・テキスト）を一時的に保存する。
+    TTL（60秒デフォルト）と件数上限（100件デフォルト）で自動削除される。
+    内部時刻はUTC datetime、API境界でISO文字列に変換。
+    """
+
+    id: str
+    content: str  # 簡潔な説明（「カメラ画像」等）
+    created_at: datetime  # UTC datetime（内部用）
+    expires_at: datetime  # UTC datetime（内部用）
+    sensory_type: str  # "visual", "audio", "text"
+    metadata: dict[str, Any]  # {file_path, camera_position等}
+
+    def to_dict(self) -> dict[str, Any]:
+        """API境界用：ISO文字列に変換."""
+        return {
+            "id": self.id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "sensory_type": self.sensory_type,
+            "metadata": self.metadata,
+        }
 
 
 # Phase 5: 因果リンク
