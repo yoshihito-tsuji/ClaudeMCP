@@ -3,23 +3,8 @@
 import pytest
 from datetime import datetime, timezone
 
-from src.memory_mcp.config import MemoryConfig
 from src.memory_mcp.episode import EpisodeManager
-from src.memory_mcp.memory import MemoryStore
 from src.memory_mcp.types import Episode
-
-
-@pytest.fixture
-async def memory_store():
-    """Create a MemoryStore instance for testing."""
-    config = MemoryConfig(
-        db_path=":memory:",  # In-memory for testing
-        collection_name="test_memories",
-    )
-    store = MemoryStore(config)
-    await store.connect()
-    yield store
-    await store.disconnect()
 
 
 @pytest.fixture
