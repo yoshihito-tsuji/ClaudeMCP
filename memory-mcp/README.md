@@ -12,7 +12,7 @@ AI に長期記憶を与える MCP サーバー。ChromaDB によるセマンテ
 - 作業記憶（直近の記憶への高速アクセス）
 - 因果リンク（記憶間の因果・関連関係の記録）
 
-## ツール一覧（18ツール）
+## ツール一覧（21ツール）
 
 ### 基本ツール
 
@@ -38,6 +38,14 @@ AI に長期記憶を与える MCP サーバー。ChromaDB によるセマンテ
 | `create_episode` | title (必須), memory_ids (必須), participants?, auto_summarize? | エピソード作成 |
 | `search_episodes` | query (必須), n_results? | エピソード検索 |
 | `get_episode_memories` | episode_id (必須) | エピソード内の記憶を時系列で取得 |
+
+### 感覚バッファツール（Phase 1）
+
+| ツール | パラメータ | 説明 |
+| --- | --- | --- |
+| `save_sensory` | content (必須), sensory_type (必須: visual/audio/text), metadata? | 感覚データを一時バッファに保存（60秒TTL） |
+| `get_sensory_buffer` | なし | バッファ内の全エントリを取得（新しい順） |
+| `promote_sensory_to_memory` | entry_id (必須), emotion?, importance?, category? | バッファエントリを長期記憶に昇格 |
 
 ### 感覚記憶ツール
 
@@ -110,6 +118,8 @@ uv run memory-mcp
 | --- | --- | --- |
 | `MEMORY_DB_PATH` | `~/.claude/memories/chroma` | ChromaDB の保存先 |
 | `MEMORY_COLLECTION_NAME` | `claude_memories` | コレクション名 |
+| `SENSORY_TTL_SEC` | `60` | 感覚バッファの保持時間（秒）。この時間を過ぎると自動削除される |
+| `SENSORY_MAX_ENTRIES` | `100` | 感覚バッファの最大エントリ数。超過時は古いものから削除（FIFO） |
 
 ## MCP 設定例
 
