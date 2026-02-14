@@ -15,6 +15,9 @@ class MemoryConfig:
 
     db_path: str
     collection_name: str
+    # Phase 1: Sensory Buffer settings
+    sensory_ttl_sec: int = 60  # Sensory buffer TTL (seconds)
+    sensory_max_entries: int = 100  # Sensory buffer max entries
 
     @classmethod
     def from_env(cls) -> "MemoryConfig":
@@ -24,6 +27,8 @@ class MemoryConfig:
         return cls(
             db_path=os.getenv("MEMORY_DB_PATH", default_path),
             collection_name=os.getenv("MEMORY_COLLECTION_NAME", "claude_memories"),
+            sensory_ttl_sec=int(os.getenv("SENSORY_TTL_SEC", "60")),
+            sensory_max_entries=int(os.getenv("SENSORY_MAX_ENTRIES", "100")),
         )
 
 
