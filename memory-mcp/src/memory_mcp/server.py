@@ -14,6 +14,7 @@ from .config import MemoryConfig, ServerConfig
 from .episode import EpisodeManager
 from .memory import MemoryStore
 from .sensory import SensoryIntegration
+from .sensory_buffer import SensoryBuffer
 from .types import CameraPosition
 
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,8 @@ class MemoryMCPServer:
         self._memory_store: MemoryStore | None = None
         self._episode_manager: EpisodeManager | None = None  # Phase 4.2
         self._sensory_integration: SensoryIntegration | None = None  # Phase 4.3
+        self._sensory_buffer: SensoryBuffer | None = None  # Phase 1
+        self._cleanup_task: asyncio.Task | None = None  # Phase 1: cleanup task
         self._server_config = ServerConfig.from_env()
         self._setup_handlers()
 
@@ -523,6 +526,73 @@ class MemoryMCPServer:
                             },
                         },
                         "required": ["tool_name", "parameters_summary", "result_summary"],
+                    },
+                ),
+                # Phase 1: Sensory Buffer Tools
+                Tool(
+                    name="save_sensory",
+                    description="Save sensory data to temporary buffer (60s TTL). Use this to temporarily store visual/audio/text data before deciding to promote to long-term memory.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "description": "Brief description of sensory data (e.g., 'Camera image from living room')",
+                            },
+                            "sensory_type": {
+                                "type": "string",
+                                "description": "Type of sensory data",
+                                "enum": ["visual", "audio", "text"],
+                            },
+                            "metadata": {
+                                "type": "object",
+                                "description": "Additional metadata (file_path, camera_position, etc.)",
+                                "default": {},
+                            },
+                        },
+                        "required": ["content", "sensory_type"],
+                    },
+                ),
+                Tool(
+                    name="get_sensory_buffer",
+                    description="Get all entries in the sensory buffer (newest first). Use this to review temporary sensory data before it expires.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                    },
+                ),
+                Tool(
+                    name="promote_sensory_to_memory",
+                    description="Promote a sensory buffer entry to long-term memory. Use this when sensory data should be permanently remembered.",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "entry_id": {
+                                "type": "string",
+                                "description": "ID of the sensory buffer entry to promote",
+                            },
+                            "emotion": {
+                                "type": "string",
+                                "description": "Emotion associated with this memory",
+                                "default": "neutral",
+                                "enum": ["happy", "sad", "surprised", "moved", "excited", "nostalgic", "curious", "neutral"],
+                            },
+                            "importance": {
+                                "type": "integer",
+                                "description": "Importance level from 1 (trivial) to 5 (critical)",
+                                "default": 3,
+                                "minimum": 1,
+                                "maximum": 5,
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "Category of memory",
+                                "default": "observation",
+                                "enum": ["daily", "philosophical", "technical", "memory", "observation", "feeling", "conversation", "action"],
+                            },
+                        },
+                        "required": ["entry_id"],
                     },
                 ),
             ]
@@ -1109,6 +1179,75 @@ Date Range:
                             )
                         ]
 
+                    case "save_sensory":
+                        if self._sensory_buffer is None:
+                            return [TextContent(type="text", text="Error: Sensory buffer not initialized")]
+
+                        content = arguments.get("content", "")
+                        sensory_type = arguments.get("sensory_type", "")
+                        if not content or not sensory_type:
+                            return [TextContent(type="text", text="Error: content and sensory_type are required")]
+
+                        metadata = arguments.get("metadata", {})
+
+                        entry = await self._sensory_buffer.add(
+                            content=content,
+                            sensory_type=sensory_type,
+                            metadata=metadata,
+                        )
+
+                        return [
+                            TextContent(
+                                type="text",
+                                text=f"Sensory data saved to buffer!\n{json.dumps(entry.to_dict(), indent=2)}",
+                            )
+                        ]
+
+                    case "get_sensory_buffer":
+                        if self._sensory_buffer is None:
+                            return [TextContent(type="text", text="Error: Sensory buffer not initialized")]
+
+                        entries = await self._sensory_buffer.get_all()
+                        entries_dict = [entry.to_dict() for entry in entries]
+
+                        return [
+                            TextContent(
+                                type="text",
+                                text=f"Sensory buffer ({len(entries)} entries):\n{json.dumps(entries_dict, indent=2)}",
+                            )
+                        ]
+
+                    case "promote_sensory_to_memory":
+                        if self._sensory_buffer is None:
+                            return [TextContent(type="text", text="Error: Sensory buffer not initialized")]
+
+                        entry_id = arguments.get("entry_id", "")
+                        if not entry_id:
+                            return [TextContent(type="text", text="Error: entry_id is required")]
+
+                        # Get entry from buffer
+                        entry = await self._sensory_buffer.get_by_id(entry_id)
+                        if entry is None:
+                            return [TextContent(type="text", text=f"Error: Entry {entry_id} not found in buffer (may have expired)")]
+
+                        # Save to long-term memory
+                        memory = await self._memory_store.save(
+                            content=f"[{entry.sensory_type}] {entry.content}",
+                            emotion=arguments.get("emotion", "neutral"),
+                            importance=arguments.get("importance", 3),
+                            category=arguments.get("category", "observation"),
+                        )
+
+                        # Remove from buffer
+                        await self._sensory_buffer.remove(entry_id)
+
+                        return [
+                            TextContent(
+                                type="text",
+                                text=f"Promoted to long-term memory!\nSensory ID: {entry_id[:8]}...\nMemory ID: {memory.id}\nType: {entry.sensory_type}\nContent: {entry.content}",
+                            )
+                        ]
+
                     case _:
                         return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -1122,6 +1261,13 @@ Date Range:
         self._memory_store = MemoryStore(config)
         await self._memory_store.connect()
         logger.info(f"Connected to memory store at {config.db_path}")
+
+        # Phase 1: Initialize sensory buffer
+        self._sensory_buffer = SensoryBuffer(
+            ttl_sec=config.sensory_ttl_sec,
+            max_entries=config.sensory_max_entries,
+        )
+        logger.info(f"Sensory buffer initialized (TTL={config.sensory_ttl_sec}s, max={config.sensory_max_entries})")
 
         # Phase 4.2: Initialize episode manager
         episodes_collection = self._memory_store.get_episodes_collection()
@@ -1139,13 +1285,39 @@ Date Range:
             self._memory_store = None
             logger.info("Disconnected from memory store")
 
+    async def _cleanup_loop(self) -> None:
+        """Background task to cleanup expired sensory buffer entries (30s interval)."""
+        while True:
+            try:
+                await asyncio.sleep(30)
+                if self._sensory_buffer:
+                    removed = await self._sensory_buffer.cleanup_expired()
+                    if removed > 0:
+                        logger.debug(f"Cleaned up {removed} expired sensory buffer entries")
+            except asyncio.CancelledError:
+                logger.info("Cleanup task cancelled")
+                break
+            except Exception as e:
+                logger.exception(f"Error in cleanup loop: {e}")
+
     @asynccontextmanager
     async def run_context(self):
         """Context manager for server lifecycle."""
         try:
             await self.connect_memory()
+            # Start cleanup task
+            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+            logger.info("Started sensory buffer cleanup task (30s interval)")
             yield
         finally:
+            # Stop cleanup task
+            if self._cleanup_task:
+                self._cleanup_task.cancel()
+                try:
+                    await self._cleanup_task
+                except asyncio.CancelledError:
+                    pass
+                self._cleanup_task = None
             await self.disconnect_memory()
 
     async def run(self) -> None:
