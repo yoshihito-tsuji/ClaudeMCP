@@ -15,6 +15,7 @@ from .episode import EpisodeManager
 from .memory import MemoryStore
 from .sensory import SensoryIntegration
 from .sensory_buffer import SensoryBuffer
+from .short_term_memory import ShortTermMemory
 from .types import CameraPosition
 
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +32,8 @@ class MemoryMCPServer:
         self._sensory_integration: SensoryIntegration | None = None  # Phase 4.3
         self._sensory_buffer: SensoryBuffer | None = None  # Phase 1
         self._cleanup_task: asyncio.Task | None = None  # Phase 1: cleanup task
+        self._shortterm_memory: ShortTermMemory | None = None  # Phase 2
+        self._auto_promote_task: asyncio.Task | None = None  # Phase 2: auto-promotion task
         self._server_config = ServerConfig.from_env()
         self._setup_handlers()
 
@@ -1278,6 +1281,20 @@ Date Range:
         self._sensory_integration = SensoryIntegration(self._memory_store)
         logger.info("Sensory integration initialized")
 
+        # Phase 2: Initialize short-term memory (if V2 enabled)
+        if config.memory_model_v2:
+            self._shortterm_memory = ShortTermMemory(
+                ttl_sec=config.shortterm_ttl_sec,
+                max_entries=config.shortterm_max_entries,
+                auto_promote_threshold=config.auto_promote_threshold,
+            )
+            logger.info(
+                f"Short-term memory initialized (V2 mode: TTL={config.shortterm_ttl_sec}s, "
+                f"max={config.shortterm_max_entries}, threshold={config.auto_promote_threshold})"
+            )
+        else:
+            logger.info("Memory Model V2 disabled (using Phase 1 model)")
+
     async def disconnect_memory(self) -> None:
         """Disconnect from memory store."""
         if self._memory_store:
@@ -1300,6 +1317,46 @@ Date Range:
             except Exception as e:
                 logger.exception(f"Error in cleanup loop: {e}")
 
+    async def _auto_promote_loop(self) -> None:
+        """Background task to auto-promote high-importance short-term memories (60s interval).
+
+        Phase 2: Automatically promotes memories with importance >= threshold to long-term storage.
+        """
+        while True:
+            try:
+                await asyncio.sleep(60)  # Check every minute
+                if self._shortterm_memory and self._memory_store:
+                    # Get candidates for auto-promotion
+                    candidates = await self._shortterm_memory.get_auto_promote_candidates()
+
+                    for entry in candidates:
+                        # Promote to long-term memory
+                        await self._memory_store.save(
+                            content=entry.content,
+                            emotion=entry.emotion,
+                            importance=entry.importance,
+                            category=entry.category,
+                        )
+
+                        # Remove from short-term memory
+                        await self._shortterm_memory.remove(entry.id)
+
+                        logger.info(
+                            f"Auto-promoted memory (importance={entry.importance}): {entry.content[:50]}..."
+                        )
+
+                    if candidates:
+                        # Also cleanup expired entries
+                        removed = await self._shortterm_memory.cleanup_expired()
+                        if removed > 0:
+                            logger.debug(f"Cleaned up {removed} expired short-term memory entries")
+
+            except asyncio.CancelledError:
+                logger.info("Auto-promote task cancelled")
+                break
+            except Exception as e:
+                logger.exception(f"Error in auto-promote loop: {e}")
+
     @asynccontextmanager
     async def run_context(self):
         """Context manager for server lifecycle."""
@@ -1308,8 +1365,23 @@ Date Range:
             # Start cleanup task
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
             logger.info("Started sensory buffer cleanup task (30s interval)")
+
+            # Start auto-promotion task (Phase 2, if V2 enabled)
+            if self._shortterm_memory:
+                self._auto_promote_task = asyncio.create_task(self._auto_promote_loop())
+                logger.info("Started auto-promotion task (60s interval)")
+
             yield
         finally:
+            # Stop auto-promotion task
+            if self._auto_promote_task:
+                self._auto_promote_task.cancel()
+                try:
+                    await self._auto_promote_task
+                except asyncio.CancelledError:
+                    pass
+                self._auto_promote_task = None
+
             # Stop cleanup task
             if self._cleanup_task:
                 self._cleanup_task.cancel()
@@ -1318,6 +1390,7 @@ Date Range:
                 except asyncio.CancelledError:
                     pass
                 self._cleanup_task = None
+
             await self.disconnect_memory()
 
     async def run(self) -> None:
