@@ -193,3 +193,102 @@ class TestMemoryModelV2Integration:
             memory_ids=[memory.id],
         )
         assert episode.title == "Test episode"
+
+
+class TestV2PublicToolIntegration:
+    """Test V2 mode behavior for public tools (remember, promote_sensory_to_memory)."""
+
+    @pytest.mark.asyncio
+    async def test_remember_saves_to_shortterm_in_v2_mode(self, v2_server):
+        """Test that memories are saved to short-term storage in V2 mode.
+
+        This simulates the behavior when 'remember' tool is called in V2 mode.
+        """
+        # Directly add to short-term memory (simulating remember tool behavior)
+        entry = await v2_server._shortterm_memory.add(
+            content="Test memory via remember tool",
+            emotion="curious",
+            importance=3,
+            category="daily",
+            origin="direct",
+        )
+
+        # Verify actually saved to short-term memory
+        entries = await v2_server._shortterm_memory.get_all()
+        assert len(entries) == 1
+        assert entries[0].content == "Test memory via remember tool"
+        assert entries[0].origin == "direct"
+        assert entries[0].importance == 3
+
+    @pytest.mark.asyncio
+    async def test_promote_sensory_to_shortterm_in_v2_mode(self, v2_server):
+        """Test that sensory buffer promotes to short-term in V2 mode.
+
+        This simulates the behavior when 'promote_sensory_to_memory' is called in V2 mode.
+        """
+        # Add sensory entry first
+        sensory_entry = await v2_server._sensory_buffer.add(
+            content="Camera detected object",
+            sensory_type="visual",
+        )
+
+        # Promote to short-term memory (simulating tool behavior)
+        shortterm_entry = await v2_server._shortterm_memory.add(
+            content=f"[{sensory_entry.sensory_type}] {sensory_entry.content}",
+            emotion="curious",
+            importance=4,
+            category="observation",
+            origin="sensory_buffer",
+            metadata=sensory_entry.metadata,
+        )
+
+        # Remove from sensory buffer
+        await v2_server._sensory_buffer.remove(sensory_entry.id)
+
+        # Verify actually saved to short-term memory
+        entries = await v2_server._shortterm_memory.get_all()
+        assert len(entries) == 1
+        assert "[visual] Camera detected object" in entries[0].content
+        assert entries[0].origin == "sensory_buffer"
+
+        # Verify removed from sensory buffer
+        assert v2_server._sensory_buffer.size() == 0
+
+    @pytest.mark.asyncio
+    async def test_auto_promotion_flow_end_to_end(self, v2_server):
+        """Test complete auto-promotion flow: short-term → long-term."""
+        # Add high-importance memory to short-term
+        entry = await v2_server._shortterm_memory.add(
+            content="Critical event requiring long-term storage",
+            emotion="neutral",
+            importance=5,  # Above threshold (4)
+            category="daily",
+        )
+
+        # Verify in short-term memory
+        shortterm_entries = await v2_server._shortterm_memory.get_all()
+        assert len(shortterm_entries) == 1
+
+        # Get auto-promotion candidates
+        candidates = await v2_server._shortterm_memory.get_auto_promote_candidates()
+        assert len(candidates) == 1
+        assert candidates[0].importance == 5
+
+        # Simulate auto-promotion background task
+        for candidate in candidates:
+            # Promote to long-term
+            memory = await v2_server._memory_store.save(
+                content=candidate.content,
+                emotion=candidate.emotion,
+                importance=candidate.importance,
+                category=candidate.category,
+            )
+            # Remove from short-term
+            await v2_server._shortterm_memory.remove(candidate.id)
+
+        # Verify promoted to long-term
+        assert memory.content == "Critical event requiring long-term storage"
+        assert memory.importance == 5
+
+        # Verify removed from short-term
+        assert v2_server._shortterm_memory.size() == 0

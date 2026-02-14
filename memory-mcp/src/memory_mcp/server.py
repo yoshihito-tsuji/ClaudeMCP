@@ -613,32 +613,64 @@ class MemoryMCPServer:
                         if not content:
                             return [TextContent(type="text", text="Error: content is required")]
 
+                        emotion = arguments.get("emotion", "neutral")
+                        importance = arguments.get("importance", 3)
+                        category = arguments.get("category", "daily")
                         auto_link = arguments.get("auto_link", True)
 
-                        if auto_link:
-                            memory = await self._memory_store.save_with_auto_link(
-                                content=content,
-                                emotion=arguments.get("emotion", "neutral"),
-                                importance=arguments.get("importance", 3),
-                                category=arguments.get("category", "daily"),
-                                link_threshold=arguments.get("link_threshold", 0.8),
-                            )
-                            linked_info = f"\nLinked to: {len(memory.linked_ids)} memories"
-                        else:
-                            memory = await self._memory_store.save(
-                                content=content,
-                                emotion=arguments.get("emotion", "neutral"),
-                                importance=arguments.get("importance", 3),
-                                category=arguments.get("category", "daily"),
-                            )
-                            linked_info = ""
+                        # Phase 2: Check if V2 mode is enabled
+                        config = MemoryConfig.from_env()
 
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Memory saved!\nID: {memory.id}\nTimestamp: {memory.timestamp}\nEmotion: {memory.emotion}\nImportance: {memory.importance}\nCategory: {memory.category}{linked_info}",
+                        if config.memory_model_v2 and self._shortterm_memory:
+                            # V2 mode: Save to short-term memory first
+                            entry = await self._shortterm_memory.add(
+                                content=content,
+                                emotion=emotion,
+                                importance=importance,
+                                category=category,
+                                origin="direct",
                             )
-                        ]
+
+                            # Note: auto_link not supported in short-term memory
+                            auto_link_note = (
+                                "\nNote: auto_link not available in V2 mode (short-term memory)"
+                                if auto_link
+                                else ""
+                            )
+
+                            return [
+                                TextContent(
+                                    type="text",
+                                    text=f"Memory saved to short-term storage (V2 mode)!\nID: {entry.id}\nEmotion: {entry.emotion}\nImportance: {entry.importance}\nCategory: {entry.category}\nWill auto-promote to long-term if importance >= {config.auto_promote_threshold}{auto_link_note}",
+                                )
+                            ]
+
+                        else:
+                            # V1 mode: Save directly to long-term memory (original behavior)
+                            if auto_link:
+                                memory = await self._memory_store.save_with_auto_link(
+                                    content=content,
+                                    emotion=emotion,
+                                    importance=importance,
+                                    category=category,
+                                    link_threshold=arguments.get("link_threshold", 0.8),
+                                )
+                                linked_info = f"\nLinked to: {len(memory.linked_ids)} memories"
+                            else:
+                                memory = await self._memory_store.save(
+                                    content=content,
+                                    emotion=emotion,
+                                    importance=importance,
+                                    category=category,
+                                )
+                                linked_info = ""
+
+                            return [
+                                TextContent(
+                                    type="text",
+                                    text=f"Memory saved!\nID: {memory.id}\nTimestamp: {memory.timestamp}\nEmotion: {memory.emotion}\nImportance: {memory.importance}\nCategory: {memory.category}{linked_info}",
+                                )
+                            ]
 
                     case "search_memories":
                         query = arguments.get("query", "")
@@ -1233,23 +1265,52 @@ Date Range:
                         if entry is None:
                             return [TextContent(type="text", text=f"Error: Entry {entry_id} not found in buffer (may have expired)")]
 
-                        # Save to long-term memory
-                        memory = await self._memory_store.save(
-                            content=f"[{entry.sensory_type}] {entry.content}",
-                            emotion=arguments.get("emotion", "neutral"),
-                            importance=arguments.get("importance", 3),
-                            category=arguments.get("category", "observation"),
-                        )
+                        emotion = arguments.get("emotion", "neutral")
+                        importance = arguments.get("importance", 3)
+                        category = arguments.get("category", "observation")
 
-                        # Remove from buffer
-                        await self._sensory_buffer.remove(entry_id)
+                        # Phase 2: Check if V2 mode is enabled
+                        config = MemoryConfig.from_env()
 
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Promoted to long-term memory!\nSensory ID: {entry_id[:8]}...\nMemory ID: {memory.id}\nType: {entry.sensory_type}\nContent: {entry.content}",
+                        if config.memory_model_v2 and self._shortterm_memory:
+                            # V2 mode: Promote to short-term memory
+                            shortterm_entry = await self._shortterm_memory.add(
+                                content=f"[{entry.sensory_type}] {entry.content}",
+                                emotion=emotion,
+                                importance=importance,
+                                category=category,
+                                origin="sensory_buffer",
+                                metadata=entry.metadata,
                             )
-                        ]
+
+                            # Remove from sensory buffer
+                            await self._sensory_buffer.remove(entry_id)
+
+                            return [
+                                TextContent(
+                                    type="text",
+                                    text=f"Promoted to short-term memory (V2 mode)!\nSensory ID: {entry_id[:8]}...\nShort-term ID: {shortterm_entry.id}\nType: {entry.sensory_type}\nContent: {entry.content}\nWill auto-promote to long-term if importance >= {config.auto_promote_threshold}",
+                                )
+                            ]
+
+                        else:
+                            # V1 mode: Promote directly to long-term memory (original behavior)
+                            memory = await self._memory_store.save(
+                                content=f"[{entry.sensory_type}] {entry.content}",
+                                emotion=emotion,
+                                importance=importance,
+                                category=category,
+                            )
+
+                            # Remove from buffer
+                            await self._sensory_buffer.remove(entry_id)
+
+                            return [
+                                TextContent(
+                                    type="text",
+                                    text=f"Promoted to long-term memory!\nSensory ID: {entry_id[:8]}...\nMemory ID: {memory.id}\nType: {entry.sensory_type}\nContent: {entry.content}",
+                                )
+                            ]
 
                     case _:
                         return [TextContent(type="text", text=f"Unknown tool: {name}")]
