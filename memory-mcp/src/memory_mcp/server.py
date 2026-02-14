@@ -34,6 +34,7 @@ class MemoryMCPServer:
         self._cleanup_task: asyncio.Task | None = None  # Phase 1: cleanup task
         self._shortterm_memory: ShortTermMemory | None = None  # Phase 2
         self._auto_promote_task: asyncio.Task | None = None  # Phase 2: auto-promotion task
+        self._tool_call_impl = None  # Hold reference to call_tool closure for testing
         self._server_config = ServerConfig.from_env()
         self._setup_handlers()
 
@@ -1319,172 +1320,15 @@ Date Range:
                 logger.exception(f"Error in tool {name}")
                 return [TextContent(type="text", text=f"Error: {e!s}")]
 
+        # Store reference to call_tool for testing
+        self._tool_call_impl = call_tool
+
     async def _handle_tool_call(self, name: str, arguments: dict[str, Any]) -> list[TextContent]:
-        """Handle tool calls - extracted for testing purposes."""
-        # Delegate to the call_tool closure above (same logic)
-        # This method exists to allow tests to call tools without going through MCP protocol
-        if self._memory_store is None:
-            return [TextContent(type="text", text="Error: Memory store not connected")]
+        """Handle tool calls - delegates to call_tool closure for testing."""
+        if self._tool_call_impl is None:
+            return [TextContent(type="text", text="Error: Tool handler not initialized")]
 
-        # Since we can't directly call the closure, we duplicate the logic here
-        # TODO: Refactor to avoid duplication
-        try:
-            match name:
-                case "remember":
-                    content = arguments.get("content", "")
-                    if not content:
-                        return [TextContent(type="text", text="Error: content is required")]
-
-                    emotion = arguments.get("emotion", "neutral")
-                    importance = arguments.get("importance", 3)
-                    category = arguments.get("category", "daily")
-                    auto_link = arguments.get("auto_link", True)
-
-                    # Phase 2: Check if V2 mode is enabled
-                    config = MemoryConfig.from_env()
-
-                    if config.memory_model_v2 and self._shortterm_memory:
-                        # V2 mode: Save to short-term memory first
-                        entry = await self._shortterm_memory.add(
-                            content=content,
-                            emotion=emotion,
-                            importance=importance,
-                            category=category,
-                            origin="direct",
-                        )
-
-                        # Note: auto_link not supported in short-term memory
-                        auto_link_note = (
-                            "\nNote: auto_link not available in V2 mode (short-term memory)"
-                            if auto_link
-                            else ""
-                        )
-
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Memory saved to short-term storage (V2 mode)!\nID: {entry.id}\nEmotion: {entry.emotion}\nImportance: {entry.importance}\nCategory: {entry.category}\nWill auto-promote to long-term if importance >= {config.auto_promote_threshold}{auto_link_note}",
-                            )
-                        ]
-
-                    else:
-                        # V1 mode: Save directly to long-term memory (original behavior)
-                        if auto_link:
-                            memory = await self._memory_store.save_with_auto_link(
-                                content=content,
-                                emotion=emotion,
-                                importance=importance,
-                                category=category,
-                                link_threshold=arguments.get("link_threshold", 0.8),
-                            )
-                            linked_info = f"\nLinked to: {len(memory.linked_ids)} memories"
-                        else:
-                            memory = await self._memory_store.save(
-                                content=content,
-                                emotion=emotion,
-                                importance=importance,
-                                category=category,
-                            )
-                            linked_info = ""
-
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Memory saved!\nID: {memory.id}\nTimestamp: {memory.timestamp}\nEmotion: {memory.emotion}\nImportance: {memory.importance}\nCategory: {memory.category}{linked_info}",
-                            )
-                        ]
-
-                case "save_sensory":
-                    if self._sensory_buffer is None:
-                        return [TextContent(type="text", text="Error: Sensory buffer not initialized")]
-
-                    content = arguments.get("content", "")
-                    sensory_type = arguments.get("sensory_type", "")
-                    if not content or not sensory_type:
-                        return [TextContent(type="text", text="Error: content and sensory_type are required")]
-
-                    metadata = arguments.get("metadata", {})
-
-                    entry = await self._sensory_buffer.add(
-                        content=content,
-                        sensory_type=sensory_type,
-                        metadata=metadata,
-                    )
-
-                    return [
-                        TextContent(
-                            type="text",
-                            text=f"Saved to sensory buffer!\nID: {entry.id}\nType: {entry.sensory_type}\nContent: {entry.content}\nExpires: {entry.expires_at.isoformat()}",
-                        )
-                    ]
-
-                case "promote_sensory_to_memory":
-                    if self._sensory_buffer is None:
-                        return [TextContent(type="text", text="Error: Sensory buffer not initialized")]
-
-                    entry_id = arguments.get("entry_id", "")
-                    if not entry_id:
-                        return [TextContent(type="text", text="Error: entry_id is required")]
-
-                    # Get entry from buffer
-                    entry = await self._sensory_buffer.get_by_id(entry_id)
-                    if entry is None:
-                        return [TextContent(type="text", text=f"Error: Entry {entry_id} not found in buffer (may have expired)")]
-
-                    emotion = arguments.get("emotion", "neutral")
-                    importance = arguments.get("importance", 3)
-                    category = arguments.get("category", "observation")
-
-                    # Phase 2: Check if V2 mode is enabled
-                    config = MemoryConfig.from_env()
-
-                    if config.memory_model_v2 and self._shortterm_memory:
-                        # V2 mode: Promote to short-term memory
-                        shortterm_entry = await self._shortterm_memory.add(
-                            content=f"[{entry.sensory_type}] {entry.content}",
-                            emotion=emotion,
-                            importance=importance,
-                            category=category,
-                            origin="sensory_buffer",
-                            metadata=entry.metadata,
-                        )
-
-                        # Remove from sensory buffer
-                        await self._sensory_buffer.remove(entry_id)
-
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Promoted to short-term memory (V2 mode)!\nSensory ID: {entry_id[:8]}...\nShort-term ID: {shortterm_entry.id}\nType: {entry.sensory_type}\nContent: {entry.content}\nWill auto-promote to long-term if importance >= {config.auto_promote_threshold}",
-                            )
-                        ]
-
-                    else:
-                        # V1 mode: Promote directly to long-term memory (original behavior)
-                        memory = await self._memory_store.save(
-                            content=f"[{entry.sensory_type}] {entry.content}",
-                            emotion=emotion,
-                            importance=importance,
-                            category=category,
-                        )
-
-                        # Remove from buffer
-                        await self._sensory_buffer.remove(entry_id)
-
-                        return [
-                            TextContent(
-                                type="text",
-                                text=f"Promoted to long-term memory!\nSensory ID: {entry_id[:8]}...\nMemory ID: {memory.id}\nType: {entry.sensory_type}\nContent: {entry.content}",
-                            )
-                        ]
-
-                case _:
-                    # For other tools, return error (not implemented in test helper)
-                    return [TextContent(type="text", text=f"Tool '{name}' not implemented in test helper. Use full server for other tools.")]
-
-        except Exception as e:
-            logger.exception(f"Error in tool {name}")
-            return [TextContent(type="text", text=f"Error: {e!s}")]
+        return await self._tool_call_impl(name, arguments)
 
     async def connect_memory(self) -> None:
         """Connect to memory store (Phase 4: with episode manager & sensory integration)."""

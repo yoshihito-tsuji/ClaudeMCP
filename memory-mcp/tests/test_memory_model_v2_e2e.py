@@ -3,6 +3,8 @@
 Tests that verify Phase 2 features work correctly via the public MCP tool interface.
 """
 
+import json
+
 import pytest
 
 from memory_mcp.config import MemoryConfig
@@ -126,9 +128,11 @@ class TestPromoteSensoryToolE2E:
 
         # Extract entry ID from response
         response_text = save_result[0].text
-        assert "Saved to sensory buffer!" in response_text
-        # Extract ID from response (format: "ID: <id>")
-        entry_id = response_text.split("ID: ")[1].split("\n")[0]
+        assert "Sensory data saved to buffer!" in response_text
+        # Extract ID from JSON response
+        json_start = response_text.index("{")
+        entry_data = json.loads(response_text[json_start:])
+        entry_id = entry_data["id"]
 
         # Verify in sensory buffer
         assert v2_server._sensory_buffer.size() == 1
@@ -174,9 +178,11 @@ class TestPromoteSensoryToolE2E:
             },
         )
 
-        # Extract entry ID
+        # Extract entry ID from JSON response
         response_text = save_result[0].text
-        entry_id = response_text.split("ID: ")[1].split("\n")[0]
+        json_start = response_text.index("{")
+        entry_data = json.loads(response_text[json_start:])
+        entry_id = entry_data["id"]
 
         # 2. Promote to memory
         promote_result = await v1_server._handle_tool_call(
