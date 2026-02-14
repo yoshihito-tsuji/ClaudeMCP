@@ -64,6 +64,44 @@ class SensoryBufferEntry:
         }
 
 
+# Phase 2: Short-term Memory
+
+
+@dataclass(frozen=True)
+class ShortTermMemoryEntry:
+    """短期記憶エントリ（中期保存、TTL + 重要度管理）.
+
+    感覚バッファから昇格された記憶や、直接保存された記憶を中期的に保持する。
+    TTL（1時間デフォルト）と件数上限（50件デフォルト）で自動削除される。
+    重要度が閾値（デフォルト4）以上の場合、自動的に長期記憶に昇格される。
+    内部時刻はUTC datetime、API境界でISO文字列に変換。
+    """
+
+    id: str
+    content: str  # 記憶内容
+    created_at: datetime  # UTC datetime（内部用）
+    expires_at: datetime  # UTC datetime（内部用）
+    emotion: str  # Emotion enum: happy, sad, surprised, moved, excited, nostalgic, curious, neutral
+    importance: int  # 1-5
+    category: str  # Category enum: daily, philosophical, technical, memory, observation, feeling, conversation, action
+    origin: str  # "sensory_buffer" or "direct"
+    metadata: dict[str, Any]  # 追加情報
+
+    def to_dict(self) -> dict[str, Any]:
+        """API境界用：ISO文字列に変換."""
+        return {
+            "id": self.id,
+            "content": self.content,
+            "created_at": self.created_at.isoformat(),
+            "expires_at": self.expires_at.isoformat(),
+            "emotion": self.emotion,
+            "importance": self.importance,
+            "category": self.category,
+            "origin": self.origin,
+            "metadata": self.metadata,
+        }
+
+
 # Phase 5: 因果リンク
 
 
