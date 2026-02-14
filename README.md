@@ -4,7 +4,7 @@
 
 > 原作: [kmizu/embodied-claude](https://github.com/kmizu/embodied-claude)
 
-**独立開発方針（2026-02-12 決定）**: 本プロジェクトは kmizu/embodied-claude から独立したプロジェクトです。上流リポジトリとの同期・参照は行いません。機能追加・設計判断はすべて本プロジェクト独自に行います。
+**独立開発方針（2026-02-12 決定）**: 本プロジェクトは kmizu/embodied-claude から独立したプロジェクトです。コード同期は行いませんが、セットアップ手順などの参考情報は必要に応じて参照します。機能追加・設計判断はすべて本プロジェクト独自に行います。
 
 ## コンセプト
 
@@ -107,7 +107,7 @@ embodied-claude/
 
 ### ソフトウェア
 
-- Python 3.10+
+- Python 3.10+（基本要件。ただし `system-temperature-mcp` は Python 3.12+ 必須）
 - uv（Python パッケージマネージャー）
 - ffmpeg（画像・音声キャプチャ用）
 - OpenCV（USB カメラ用）
@@ -483,8 +483,8 @@ crontab -e
 
 ### コミットメッセージ規則
 
+- Conventional Commits 形式（`feat:`, `fix:`, `feat!:` など）を使用
 - 日本語で記述し、変更の意図（why）を明確にする
-- プレフィックス: `Add:` / `Update:` / `Fix:` / `Refactor:` / `Docs:` / `Security:`
 
 ## ライセンス
 
